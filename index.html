@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>114年度財產交易所得稅計算器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f3f4f6;
+        }
+        
+        /* Tooltip 樣式 */
+        .tooltip-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: help;
+        }
+        .tooltip-icon {
+            color: #6b7280;
+            margin-left: 0.25rem;
+            transition: color 0.2s;
+        }
+        .tooltip-container:hover .tooltip-icon {
+            color: #3b82f6;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            width: 280px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: left;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            position: absolute;
+            z-index: 50;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: opacity 0.3s;
+            font-size: 0.875rem;
+            font-weight: normal;
+            line-height: 1.5;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #1f2937 transparent transparent transparent;
+        }
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* 隱藏/顯示動畫 */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+            display: block !important;
+        }
+        .hidden-section {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="text-gray-800 p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-indigo-700 mb-2">114年度財產交易所得稅計算器</h1>
+            <p class="text-gray-500">適用於104年12月31日以前取得之房屋財產交易所得試算 (依114年度財政部規定)</p>
+        </div>
+
+        <!-- 區塊 1：新舊制判定 (防呆) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 class="text-lg font-bold text-gray-700 mb-4 flex items-center border-b pb-2">
+                <span class="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 inline-flex items-center justify-center text-sm mr-2">1</span>
+                適用制度判定
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">取得日期 (買入)</label>
+                    <input type="date" id="acquireDate" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" onchange="checkSystem()">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">交易日期 (賣出)</label>
+                    <input type="date" id="sellDate" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" onchange="checkSystem()">
+                </div>
+            </div>
+            
+            <div id="systemWarning" class="mt-4 p-4 bg-red-50 text-red-700 rounded-lg hidden flex items-start">
+                <svg class="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                <div>
+                    <strong>系統判定：您應適用「房地合一稅 (新制)」</strong>
+                    <p class="text-sm mt-1">因取得日為105年1月1日以後，或103年1月2日以後取得且持有期間未滿2年。本計算機僅適用舊制。</p>
+                </div>
+            </div>
+            <div id="systemSuccess" class="mt-4 p-3 bg-green-50 text-green-700 rounded-lg hidden flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                <span>系統判定：適用舊制財產交易所得稅。請繼續填寫下方資料。</span>
+            </div>
+        </div>
+
+        <!-- 主要表單區塊 -->
+        <div id="mainForm" class="space-y-6 opacity-50 pointer-events-none transition-opacity duration-300">
+            
+            <!-- 區塊 2：標的物基本資料 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-bold text-gray-700 mb-4 flex items-center border-b pb-2">
+                    <span class="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 inline-flex items-center justify-center text-sm mr-2">2</span>
+                    標的物基本資料與現值
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">房屋所在縣市</label>
+                        <select id="citySelect" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" onchange="populateDistricts()">
+                            <option value="">請選擇縣市...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">鄉鎮市區</label>
+                        <select id="districtSelect" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" onchange="calculate()">
+                            <option value="">請先選擇縣市</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                            出售時 房屋評定現值
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="houseAssessed" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border pr-8" placeholder="0" oninput="calculate()">
+                            <span class="absolute right-3 top-2 text-gray-400">元</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                            出售時 土地公告現值
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="landAssessed" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border pr-8" placeholder="0" oninput="calculate()">
+                            <span class="absolute right-3 top-2 text-gray-400">元</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 房地比顯示 -->
+                <div id="ratioDisplay" class="mt-4 p-3 bg-blue-50 text-blue-800 rounded-lg text-sm hidden-section">
+                    <strong>房地現值比例：</strong> 出售時房屋佔 <span id="houseRatioText" class="font-bold text-blue-700">0%</span>
+                    <p class="text-xs mt-1 text-blue-600">公式：出售時房屋評定現值 / (出售時土地公告現值 + 出售時房屋評定現值)</p>
+                </div>
+            </div>
+
+            <!-- 區塊 3：交易金額與申報方式 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-bold text-gray-700 mb-4 flex items-center border-b pb-2">
+                    <span class="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 inline-flex items-center justify-center text-sm mr-2">3</span>
+                    交易金額與申報方式
+                </h2>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">總成交價額 (實際賣出總價)</label>
+                    <div class="relative max-w-xs">
+                        <input type="number" id="totalSellPrice" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border text-lg font-bold text-indigo-700 pr-8" placeholder="0" oninput="calculate()">
+                        <span class="absolute right-3 top-2.5 text-gray-500">元</span>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">買賣契約是否已「劃分」房地價格？</label>
+                    <div class="flex space-x-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="isSplit" value="yes" class="form-radio text-indigo-600 w-4 h-4" onchange="toggleSplit()">
+                            <span class="ml-2">是 (契約有分開寫明房屋與土地售價)</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="isSplit" value="no" class="form-radio text-indigo-600 w-4 h-4" checked onchange="toggleSplit()">
+                            <span class="ml-2 font-medium">否 (契約僅有總價，未拆分)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">請選擇申報方式</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <label class="relative border rounded-lg p-4 cursor-pointer hover:bg-gray-50 flex items-start" id="labelActual">
+                            <input type="radio" name="calcMethod" value="actual" class="form-radio text-indigo-600 mt-1" onchange="toggleMethod()">
+                            <div class="ml-3">
+                                <span class="block text-sm font-bold text-gray-900">核實計算 (依所得稅法第14條)</span>
+                                <span class="block text-xs text-gray-500 mt-1">已提供或機關已查得交易時之實際成交金額及原始取得成本。</span>
+                            </div>
+                        </label>
+                        <label class="relative border rounded-lg p-4 cursor-pointer hover:bg-gray-50 flex items-start border-indigo-500 bg-indigo-50" id="labelStandard">
+                            <input type="radio" name="calcMethod" value="standard" class="form-radio text-indigo-600 mt-1" checked onchange="toggleMethod()">
+                            <div class="ml-3">
+                                <span class="block text-sm font-bold text-gray-900 flex items-center">
+                                    標準認定 (無法證明原始成本)
+                                    <div class="tooltip-container ml-1">
+                                        <svg class="w-4 h-4 tooltip-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        <span class="tooltip-text">將依據114年度財政部公告比率計算。若符合各縣市豪宅總價標準，則以總價乘房地比後，按20%計算所得。</span>
+                                    </div>
+                                </span>
+                                <span class="block text-xs text-gray-500 mt-1">僅能提供實際賣價，無法證明買入成本。依財政部公告比率計算。</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 區塊 4：核實計算資料輸入區 (動態隱藏/顯示) -->
+            <div id="actualEntrySection" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hidden-section">
+                <h2 class="text-lg font-bold text-gray-700 mb-4 flex items-center border-b pb-2">
+                    <span class="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 inline-flex items-center justify-center text-sm mr-2">4</span>
+                    核實計算資料與費用明細
+                </h2>
+                
+                <!-- 成本與售價輸入區 -->
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    
+                    <!-- 情況A：已劃分 -->
+                    <div id="splitInputs" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden-section">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">房屋出售價格 (依契約)</label>
+                            <div class="relative">
+                                <input type="number" id="actualHouseSell" class="w-full border-gray-300 rounded-lg shadow-sm p-2 border pr-8" placeholder="0" oninput="calculate()">
+                                <span class="absolute right-3 top-2 text-gray-500">元</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">房屋原始取得成本 (依契約)</label>
+                            <div class="relative">
+                                <input type="number" id="actualHouseBuy" class="w-full border-gray-300 rounded-lg shadow-sm p-2 border pr-8" placeholder="0" oninput="calculate()">
+                                <span class="absolute right-3 top-2 text-gray-500">元</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 情況B：未劃分 -->
+                    <div id="unsplitInputs" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-1">出售總價 (已於上方填寫)</label>
+                            <div class="relative">
+                                <input type="number" id="displayTotalSell" class="w-full bg-gray-200 text-gray-500 rounded-lg shadow-sm p-2 border pr-8" readonly>
+                                <span class="absolute right-3 top-2 text-gray-500">元</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-blue-700 mb-1 font-bold">原始取得總成本 (買入總價)</label>
+                            <div class="relative">
+                                <input type="number" id="actualTotalBuy" class="w-full border-blue-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border pr-8" placeholder="請輸入總買價" oninput="calculate()">
+                                <span class="absolute right-3 top-2 text-gray-500">元</span>
+                            </div>
+                        </div>
+                        <div class="col-span-1 md:col-span-2 text-xs text-gray-500">
+                            * 因契約未拆分房地，系統將先依「出售總價 - 買進總價 - 相關費用」算出總損益後，再依房地現值比例計算房屋交易所得。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 費用逐項明細 -->
+                <h3 class="text-md font-bold text-gray-700 mb-3 border-l-4 border-indigo-500 pl-2">
+                    購入房屋達到可供使用狀態前支付之必要費用
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">契稅</label>
+                        <input type="number" id="expDeed" class="w-full border-gray-300 rounded border p-2 text-sm" placeholder="0" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">印花稅</label>
+                        <input type="number" id="expStamp" class="w-full border-gray-300 rounded border p-2 text-sm" placeholder="0" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">代書費</label>
+                        <input type="number" id="expScrivener" class="w-full border-gray-300 rounded border p-2 text-sm" placeholder="0" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">土地增值稅</label>
+                        <input type="number" id="expLandValueTax" class="w-full border-gray-300 rounded border p-2 text-sm" placeholder="0" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">規費</label>
+                        <input type="number" id="expGov" class="w-full border-gray-300 rounded border p-2 text-sm" placeholder="0" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">監證或公證費</label>
+                        <input type="number" id="expNotary" class="w-full border-gray-300 rounded border p-2 text-sm" placeholder="0" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">仲介費</label>
+                        <input type="number" id="expBroker" class="w-full border-gray-300 rounded border p-2 text-sm" placeholder="0" oninput="calculate()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">其他 (如修繕費等)</label>
+                        <input type="number" id="expOther" class="w-full border-gray-300 rounded border p-2 text-sm" placeholder="0" oninput="calculate()">
+                    </div>
+                </div>
+                
+                <div class="text-right p-3 bg-indigo-50 rounded-lg font-bold text-indigo-800">
+                    可扣除必要費用總計： <span id="totalExpenseDisplay" class="text-xl">0</span> 元
+                </div>
+            </div>
+
+            <!-- 區塊 5：計算結果 -->
+            <div class="bg-indigo-900 rounded-xl shadow-lg border border-indigo-800 p-6 text-white relative overflow-hidden">
+                <svg class="absolute top-0 right-0 transform translate-x-1/3 -translate-y-1/3 text-indigo-800 opacity-50 w-64 h-64" fill="currentColor" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50"></circle></svg>
+                
+                <h2 class="text-lg font-bold mb-4 relative z-10">計算結果</h2>
+                
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between">
+                    <div>
+                        <p class="text-indigo-200 text-sm mb-1">應申報財產交易所得</p>
+                        <div class="text-4xl md:text-5xl font-bold tracking-tight">
+                            <span id="finalResult">0</span> <span class="text-xl md:text-2xl font-normal text-indigo-200">元</span>
+                        </div>
+                        <div id="statusTags" class="mt-3 flex gap-2 flex-wrap">
+                            <!-- 狀態標籤 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-indigo-800/50 relative z-10">
+                    <p class="text-sm font-medium text-indigo-300 mb-2">法規與算式明細：</p>
+                    <ul id="formulaDetails" class="space-y-1.5 text-sm text-indigo-100 font-mono bg-indigo-950/60 p-4 rounded-lg leading-relaxed">
+                        <li>等待輸入資料...</li>
+                    </ul>
+                </div>
+                
+                <p class="text-xs text-indigo-400 mt-4 relative z-10 text-center">
+                    *本試算結果僅供參考，實際應納稅額請以國稅局核定為準。如有財產交易損失，得於未來三年度之財產交易所得中扣除。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 114年度各縣市財產交易所得計算標準 (依據最新PDF建置) ---
+        const taxData = {
+            "臺北市": {
+                high: 6000, // 單位：萬
+                districts: {
+                    "中山區": 50, "松山區": 50, "中正區": 50, "大安區": 50, "信義區": 50,
+                    "士林區": 48, "內湖區": 48, "大同區": 48, "南港區": 48,
+                    "北投區": 47, "萬華區": 47, "文山區": 47
+                }
+            },
+            "新北市": {
+                high: 4000,
+                districts: {
+                    "板橋區": 47, "永和區": 47, "中和區": 47, "三重區": 47, "新店區": 47, "蘆洲區": 47, "新莊區": 47, "土城區": 47, "林口區": 47,
+                    "汐止區": 46, "樹林區": 46, "泰山區": 41, "五股區": 39, "三峽區": 34, "淡水區": 31, "八里區": 27, "深坑區": 25, "鶯歌區": 24, "萬里區": 23, "瑞芳區": 23, "三芝區": 20, "金山區": 19,
+                    "石碇區": 14, "烏來區": 14, "平溪區": 14, "坪林區": 14, "石門區": 14, "雙溪區": 14, "貢寮區": 14
+                }
+            },
+            "桃園市": {
+                high: 3000,
+                districts: { "桃園區": 38, "中壢區": 38, "八德區": 37, "蘆竹區": 35, "龜山區": 35, "平鎮區": 30, "楊梅區": 27, "大園區": 27, "龍潭區": 23, "大溪區": 23, "新屋區": 18, "觀音區": 16, "復興區": 8 }
+            },
+            "臺中市": {
+                high: 3000,
+                districts: { "西屯區": 40, "南屯區": 38, "南區": 35, "北屯區": 34, "西區": 32, "東區": 32, "北區": 30, "太平區": 29, "中區": 28, "烏日區": 26, "大里區": 26, "豐原區": 24, "潭子區": 23, "沙鹿區": 23, "大雅區": 22, "龍井區": 21, "大肚區": 21, "霧峰區": 21, "后里區": 20, "神岡區": 20, "大甲區": 19, "梧棲區": 18, "清水區": 17, "東勢區": 15, "外埔區": 14, "新社區": 12, "大安區": 12, "石岡區": 10, "和平區": 8 }
+            },
+            "臺南市": {
+                high: 3000,
+                districts: { "東區": 32, "安南區": 30, "北區": 30, "中西區": 30, "安平區": 30, "永康區": 28, "南區": 28, "善化區": 26, "新市區": 26, "歸仁區": 25, "仁德區": 25, "安定區": 24, "新營區": 21, "官田區": 20, "西港區": 20, "麻豆區": 19, "新化區": 19, "柳營區": 18, "佳里區": 18, "關廟區": 17, "鹽水區": 16, "學甲區": 16, "六甲區": 15, "玉井區": 14, "白河區": 12, "後壁區": 12, "東山區": 12, "下營區": 12, "山上區": 12, "將軍區": 11, "七股區": 11, "龍崎區": 8, "北門區": 8, "左鎮區": 8, "大內區": 8, "楠西區": 8, "南化區": 8 }
+            },
+            "高雄市": {
+                high: 3000,
+                districts: { "左營區": 38, "鼓山區": 38, "三民區": 38, "前金區": 37, "新興區": 36, "前鎮區": 36, "苓雅區": 35, "楠梓區": 33, "小港區": 33, "鳳山區": 31, "橋頭區": 27, "仁武區": 27, "岡山區": 26, "鳥松區": 26, "鹽埕區": 26, "路竹區": 25, "燕巢區": 21, "大社區": 21, "大樹區": 20, "梓官區": 20, "大寮區": 20, "旗津區": 20, "湖內區": 18, "林園區": 17, "美濃區": 16, "阿蓮區": 16, "茄萣區": 15, "旗山區": 13, "永安區": 13, "彌陀區": 13, "田寮區": 8, "甲仙區": 8, "六龜區": 8, "桃源區": 8, "茂林區": 8, "杉林區": 8, "內門區": 8, "那瑪夏區": 8 }
+            },
+            "新竹市": { high: 3000, districts: { "全區": 32 } },
+            "新竹縣": {
+                high: 3000,
+                districts: { "竹北市": 42, "新埔鎮": 18, "新豐鄉": 17, "寶山鄉": 15, "竹東鎮": 15, "芎林鄉": 14, "湖口鄉": 14, "關西鎮": 12, "其他鄉鎮": 8 }
+            },
+            "基隆市": { high: 2200, districts: { "全區": 24 } },
+            "嘉義市": { high: 2200, districts: { "全區": 25 } },
+            "嘉義縣": {
+                high: 2200,
+                districts: { "太保市": 23, "朴子市": 21, "中埔鄉": 18, "大林鎮": 17, "民雄鄉": 17, "水上鄉": 16, "新港鄉": 13, "六腳鄉": 13, "梅山鄉": 11, "竹崎鄉": 11, "番路鄉": 11, "其他鄉鎮": 8 }
+            },
+            "屏東縣": {
+                high: 2200,
+                districts: { "屏東市": 22, "長治鄉": 19, "九如鄉": 18, "萬丹鄉": 18, "潮州鎮": 18, "新園鄉": 18, "東港鎮": 18, "里港鄉": 17, "內埔鄉": 17, "麟洛鄉": 15, "鹽埔鄉": 15, "枋寮鄉": 15, "竹田鄉": 13, "萬巒鄉": 12, "崁頂鄉": 12, "佳冬鄉": 12, "恆春鎮": 12, "琉球鄉": 12, "高樹鄉": 11, "南州鄉": 11, "林邊鄉": 11, "車城鄉": 11, "其他鄉鎮": 8 }
+            },
+            "苗栗縣": {
+                high: 2200,
+                districts: { "竹南鎮": 21, "頭份市": 20, "後龍鎮": 17, "苗栗市": 16, "苑裡鎮": 15, "造橋鄉": 13, "銅鑼鄉": 13, "公館鄉": 12, "頭屋鄉": 11, "通霄鎮": 11, "三義鄉": 11, "大湖鄉": 10, "三灣鄉": 9, "卓蘭鎮": 9, "南庄鄉": 9, "獅潭鄉": 9, "其他鄉鎮": 8 }
+            },
+            "彰化縣": {
+                high: 2200,
+                districts: { "彰化市": 19, "員林市": 18, "二林鎮": 17, "溪湖鎮": 16, "埔心鄉": 16, "田中鎮": 15, "大村鄉": 15, "永靖鄉": 15, "溪州鄉": 15, "秀水鄉": 15, "和美鎮": 15, "北斗鎮": 14, "社頭鄉": 14, "伸港鄉": 14, "鹿港鎮": 14, "福興鄉": 14, "線西鄉": 13, "埤頭鄉": 13, "芬園鄉": 12, "埔鹽鄉": 12, "花壇鄉": 12, "田尾鄉": 12, "芳苑鄉": 10, "二水鄉": 10, "竹塘鄉": 9, "大城鄉": 9, "其他鄉鎮": 8 }
+            },
+            "南投縣": {
+                high: 2200,
+                districts: { "南投市": 19, "埔里鎮": 16, "草屯鎮": 15, "鹿谷鄉": 13, "竹山鎮": 12, "名間鄉": 12, "水里鄉": 11, "集集鎮": 10, "中寮鄉": 9, "信義鄉": 9, "國姓鄉": 9, "魚池鄉": 9, "其他鄉鎮": 8 }
+            },
+            "雲林縣": {
+                high: 2200,
+                districts: { "斗六市": 19, "斗南鎮": 15, "土庫鎮": 14, "虎尾鎮": 14, "莿桐鄉": 13, "古坑鄉": 13, "西螺鎮": 13, "崙背鄉": 13, "北港鎮": 12, "麥寮鄉": 12, "二崙鄉": 12, "元長鄉": 10, "大埤鄉": 10, "林內鄉": 9, "褒忠鄉": 9, "口湖鄉": 9, "水林鄉": 9, "其他鄉鎮": 8 }
+            },
+            "宜蘭縣": {
+                high: 2200,
+                districts: { "宜蘭市": 18, "羅東鎮": 15, "員山鄉": 15, "礁溪鄉": 14, "頭城鎮": 14, "三星鄉": 14, "五結鄉": 13, "壯圍鄉": 13, "冬山鄉": 12, "蘇澳鎮": 12, "其他鄉鎮": 8 }
+            },
+            "花蓮縣": {
+                high: 2200,
+                districts: { "花蓮市": 17, "吉安鄉": 13, "新城鄉": 13, "壽豐鄉": 12, "玉里鎮": 10, "鳳林鎮": 9, "其他鄉鎮": 8 }
+            },
+            "臺東縣": {
+                high: 2200,
+                districts: { "臺東市": 18, "卑南鄉": 10, "成功鎮": 9, "太麻里鄉": 9, "其他鄉鎮": 8 }
+            },
+            "澎湖縣": { high: 2200, districts: { "馬公市": 15, "其他鄉鎮": 8 } },
+            "金門縣": { high: 2200, districts: { "金寧鄉": 15, "金湖鎮": 14, "金城鎮": 14, "烈嶼鄉": 12, "烏坵鄉": 12, "金沙鎮": 12 } },
+            "連江縣": { high: 2200, districts: { "全區": 8 } }
+        };
+
+        // 高價房屋法定利潤率 (114年規定)
+        const HIGH_VALUE_RATE = 0.20;
+
+        // --- 狀態管理 ---
+        let state = {
+            isOldSystem: false,
+            method: 'standard', // 'actual' | 'standard'
+            isSplit: false      // true: 已劃分 | false: 未劃分
+        };
+
+        const formatMoney = (num) => {
+            if (isNaN(num) || num === null) return "0";
+            return Math.round(num).toLocaleString('zh-TW');
+        };
+
+        // 初始化縣市選單
+        function initSelects() {
+            const citySelect = document.getElementById('citySelect');
+            for (const city in taxData) {
+                const option = document.createElement('option');
+                option.value = city;
+                option.textContent = city;
+                citySelect.appendChild(option);
+            }
+        }
+
+        // 連動鄉鎮市區選單
+        function populateDistricts() {
+            const city = document.getElementById('citySelect').value;
+            const districtSelect = document.getElementById('districtSelect');
+            districtSelect.innerHTML = '<option value="">請選擇鄉鎮市區...</option>';
+            
+            if (city && taxData[city]) {
+                for (const dist in taxData[city].districts) {
+                    const option = document.createElement('option');
+                    option.value = dist;
+                    option.textContent = dist;
+                    districtSelect.appendChild(option);
+                }
+            }
+            calculate();
+        }
+
+        // 1. 檢查新舊制防呆
+        function checkSystem() {
+            const acqDateStr = document.getElementById('acquireDate').value;
+            const sellDateStr = document.getElementById('sellDate').value;
+            
+            const warningEl = document.getElementById('systemWarning');
+            const successEl = document.getElementById('systemSuccess');
+            const mainForm = document.getElementById('mainForm');
+
+            if (!acqDateStr || !sellDateStr) return;
+
+            const acqDate = new Date(acqDateStr);
+            const sellDate = new Date(sellDateStr);
+            const holdYears = (sellDate - acqDate) / (1000 * 60 * 60 * 24 * 365);
+
+            let isNewSystem = false;
+            if (acqDate >= new Date('2016-01-01')) isNewSystem = true;
+            else if (acqDate >= new Date('2014-01-02') && holdYears < 2) isNewSystem = true;
+
+            if (isNewSystem) {
+                warningEl.classList.remove('hidden');
+                successEl.classList.add('hidden');
+                mainForm.classList.add('opacity-50', 'pointer-events-none');
+                state.isOldSystem = false;
+            } else {
+                warningEl.classList.add('hidden');
+                successEl.classList.remove('hidden');
+                mainForm.classList.remove('opacity-50', 'pointer-events-none');
+                state.isOldSystem = true;
+                calculate();
+            }
+        }
+
+        // 2. 切換申報方式
+        function toggleMethod() {
+            const methodEls = document.getElementsByName('calcMethod');
+            for (let el of methodEls) {
+                if (el.checked) state.method = el.value;
+            }
+
+            const actualSection = document.getElementById('actualEntrySection');
+            const labelActual = document.getElementById('labelActual');
+            const labelStandard = document.getElementById('labelStandard');
+
+            if (state.method === 'actual') {
+                actualSection.classList.remove('hidden-section');
+                actualSection.classList.add('fade-in');
+                labelActual.classList.add('border-indigo-500', 'bg-indigo-50');
+                labelStandard.classList.remove('border-indigo-500', 'bg-indigo-50');
+            } else {
+                actualSection.classList.add('hidden-section');
+                actualSection.classList.remove('fade-in');
+                labelStandard.classList.add('border-indigo-500', 'bg-indigo-50');
+                labelActual.classList.remove('border-indigo-500', 'bg-indigo-50');
+            }
+            calculate();
+        }
+
+        // 3. 切換是否劃分房地
+        function toggleSplit() {
+            state.isSplit = document.querySelector('input[name="isSplit"][value="yes"]').checked;
+            
+            const splitInputs = document.getElementById('splitInputs');
+            const unsplitInputs = document.getElementById('unsplitInputs');
+
+            if (state.isSplit) {
+                splitInputs.classList.remove('hidden-section');
+                unsplitInputs.classList.add('hidden-section');
+            } else {
+                splitInputs.classList.add('hidden-section');
+                unsplitInputs.classList.remove('hidden-section');
+            }
+            calculate();
+        }
+
+        // 4. 計算費用加總 (加入土地增值稅)
+        function getExpenses() {
+            const ids = ['expDeed', 'expStamp', 'expScrivener', 'expLandValueTax', 'expGov', 'expNotary', 'expBroker', 'expOther'];
+            let total = 0;
+            ids.forEach(id => {
+                total += parseFloat(document.getElementById(id).value) || 0;
+            });
+            document.getElementById('totalExpenseDisplay').textContent = formatMoney(total);
+            return total;
+        }
+
+        // 5. 核心計算邏輯
+        function calculate() {
+            if (!state.isOldSystem) return;
+
+            // 基礎資料
+            const cityKey = document.getElementById('citySelect').value;
+            const distKey = document.getElementById('districtSelect').value;
+            const houseAssessed = parseFloat(document.getElementById('houseAssessed').value) || 0;
+            const landAssessed = parseFloat(document.getElementById('landAssessed').value) || 0;
+            const totalSellPrice = parseFloat(document.getElementById('totalSellPrice').value) || 0;
+            
+            document.getElementById('displayTotalSell').value = totalSellPrice; // 同步未劃分區塊顯示
+
+            // 計算房地比
+            const ratioDisplay = document.getElementById('ratioDisplay');
+            let houseRatio = 0;
+            if (houseAssessed > 0 && landAssessed > 0) {
+                houseRatio = houseAssessed / (houseAssessed + landAssessed);
+                document.getElementById('houseRatioText').textContent = (houseRatio * 100).toFixed(2) + '%';
+                ratioDisplay.classList.remove('hidden-section');
+            } else {
+                ratioDisplay.classList.add('hidden-section');
+            }
+
+            const totalExpenses = getExpenses();
+            let finalIncome = 0;
+            let formulaLines = [];
+            let tagsHtml = '';
+
+            // --- A. 標準認定 ---
+            if (state.method === 'standard') {
+                if (!cityKey || !distKey || houseAssessed === 0 || totalSellPrice === 0) {
+                    formulaLines.push("提示：請輸入完整【縣市/行政區】、【房屋評定現值】與【總成交價額】。");
+                } else {
+                    const cityData = taxData[cityKey];
+                    // 將萬轉為元
+                    const highValueThreshold = cityData.high * 10000;
+                    const isHighValue = totalSellPrice >= highValueThreshold;
+
+                    if (isHighValue) {
+                        tagsHtml = `<span class="bg-red-500/20 text-red-200 border border-red-500/50 px-2 py-1 rounded text-xs font-bold">高價房屋 (符合門檻)</span>`;
+                        if (houseRatio === 0) {
+                            formulaLines.push("計算高價房屋需【土地公告現值】以得出房地比，請於上方補充填寫。");
+                        } else {
+                            finalIncome = totalSellPrice * houseRatio * HIGH_VALUE_RATE;
+                            formulaLines.push(`[符合稽徵機關查得實際成交金額，且達 ${cityKey} 高價房屋標準 ${formatMoney(highValueThreshold)}元 者]`);
+                            formulaLines.push(`1. 房地現值比例 = ${formatMoney(houseAssessed)} / (${formatMoney(landAssessed)} + ${formatMoney(houseAssessed)}) = ${(houseRatio*100).toFixed(2)}%`);
+                            formulaLines.push(`2. 歸屬房屋收入 = 實際房地總成交金額 ${formatMoney(totalSellPrice)} × 比例 ${(houseRatio*100).toFixed(2)}% = ${formatMoney(totalSellPrice * houseRatio)}`);
+                            formulaLines.push(`3. 財產交易所得 = 歸屬房屋收入 × 財政部公告高價房屋比率 ${(HIGH_VALUE_RATE*100)}% = <strong>${formatMoney(finalIncome)}</strong> 元`);
+                        }
+                    } else {
+                        tagsHtml = `<span class="bg-green-500/20 text-green-200 border border-green-500/50 px-2 py-1 rounded text-xs font-bold">一般房屋 (依現值計算)</span>`;
+                        const distRate = cityData.districts[distKey] / 100;
+                        finalIncome = houseAssessed * distRate;
+                        formulaLines.push(`[符合僅提供實際成交金額，無法證明原始成本，且未達高價房屋標準者]`);
+                        formulaLines.push(`公式：即 財產交易所得 = 房屋評定現值 × 114年財政部公告比率`);
+                        formulaLines.push(`計算：${formatMoney(houseAssessed)} × ${cityKey}${distKey}公告比率 ${(distRate*100)}% = <strong>${formatMoney(finalIncome)}</strong> 元`);
+                    }
+                }
+            } 
+            // --- B. 核實計算 ---
+            else if (state.method === 'actual') {
+                tagsHtml = `<span class="bg-blue-500/20 text-blue-200 border border-blue-500/50 px-2 py-1 rounded text-xs font-bold">核實認定 (所得稅法第14條)</span>`;
+                
+                if (!state.isSplit) {
+                    // 未劃分：先算總損益，再乘比例
+                    const totalBuyPrice = parseFloat(document.getElementById('actualTotalBuy').value) || 0;
+                    
+                    if (totalSellPrice === 0 || totalBuyPrice === 0) {
+                        formulaLines.push("提示：請補齊【出售總價】及【買進總價】。");
+                    } else if (houseRatio === 0) {
+                        formulaLines.push("提示：未劃分房地之核實計算，必須填寫【房屋及土地現值】以換算比例。");
+                    } else {
+                        const totalProfit = totalSellPrice - totalBuyPrice - totalExpenses;
+                        
+                        formulaLines.push(`[買賣未拆分房屋及土地：先依總價計算損益後，再乘比例]`);
+                        formulaLines.push(`1. 房地現值比例 = 房屋現值 / (土地現值+房屋現值) = ${(houseRatio*100).toFixed(2)}%`);
+                        formulaLines.push(`2. 總損益 = 出售總價 ${formatMoney(totalSellPrice)} - 買進總價 ${formatMoney(totalBuyPrice)} - 相關費用 ${formatMoney(totalExpenses)} = ${formatMoney(totalProfit)}`);
+                        
+                        if (totalProfit <= 0) {
+                            finalIncome = 0;
+                            formulaLines.push(`3. 財產交易所得 = 總損益為負值 (虧損)，所得以 0 元計。`);
+                            tagsHtml += `<span class="bg-yellow-500/20 text-yellow-200 border border-yellow-500/50 px-2 py-1 rounded text-xs font-bold">產生財產交易損失</span>`;
+                        } else {
+                            finalIncome = totalProfit * houseRatio;
+                            formulaLines.push(`3. 財產交易所得 = 總損益 ${formatMoney(totalProfit)} × 比例 ${(houseRatio*100).toFixed(2)}% = <strong>${formatMoney(finalIncome)}</strong> 元`);
+                        }
+                    }
+                } else {
+                    // 已劃分：直接以房屋的售價減去房屋的買價及費用
+                    const houseSellPrice = parseFloat(document.getElementById('actualHouseSell').value) || 0;
+                    const houseBuyPrice = parseFloat(document.getElementById('actualHouseBuy').value) || 0;
+                    
+                    if (houseSellPrice === 0 || houseBuyPrice === 0) {
+                        formulaLines.push("提示：請補齊【房屋出售價格】及【房屋取得成本】。");
+                    } else {
+                        const houseProfit = houseSellPrice - houseBuyPrice - totalExpenses;
+                        
+                        formulaLines.push(`[買賣已明確劃分房屋及土地價格]`);
+                        formulaLines.push(`計算：房屋出售價 ${formatMoney(houseSellPrice)} - 房屋買進價 ${formatMoney(houseBuyPrice)} - 相關費用 ${formatMoney(totalExpenses)} = ${formatMoney(houseProfit)}`);
+                        
+                        if (houseProfit <= 0) {
+                            finalIncome = 0;
+                            formulaLines.push(`結果：產生虧損，所得以 0 元計。`);
+                            tagsHtml += `<span class="bg-yellow-500/20 text-yellow-200 border border-yellow-500/50 px-2 py-1 rounded text-xs font-bold">產生財產交易損失</span>`;
+                        } else {
+                            finalIncome = houseProfit;
+                            formulaLines.push(`結果：財產交易所得 = <strong>${formatMoney(finalIncome)}</strong> 元`);
+                        }
+                    }
+                }
+            }
+
+            // 更新結果 UI
+            document.getElementById('finalResult').textContent = formatMoney(finalIncome);
+            document.getElementById('statusTags').innerHTML = tagsHtml;
+            document.getElementById('formulaDetails').innerHTML = formulaLines.map(line => `<li>${line}</li>`).join('');
+        }
+
+        // 初始化
+        initSelects();
+        toggleSplit();
+        toggleMethod();
+        
+    </script>
+</body>
+</html>
