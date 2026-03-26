@@ -70,11 +70,54 @@
         .hidden-section {
             display: none !important;
         }
+
+        /* 報表匯出專用樣式 (僅在列印與匯出 PDF 時生效) */
+        @media print {
+            body {
+                background-color: #fff;
+                color: #000;
+            }
+            .no-print {
+                display: none !important;
+            }
+            #printArea {
+                display: block !important;
+                width: 100%;
+            }
+            .print-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }
+            .print-table th, .print-table td {
+                border: 1px solid #333;
+                padding: 10px;
+                text-align: left;
+                font-size: 14px;
+            }
+            .print-table th {
+                background-color: #f3f4f6 !important;
+                -webkit-print-color-adjust: exact;
+            }
+            .print-title {
+                text-align: center;
+                font-size: 24px;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
+        }
+        
+        /* 隱藏原生數字輸入框的上下箭頭 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
     </style>
 </head>
 <body class="text-gray-800 p-4 md:p-8">
 
-    <div class="max-w-4xl mx-auto space-y-6">
+    <div class="max-w-4xl mx-auto space-y-6 no-print">
         
         <!-- Header -->
         <div class="text-center mb-8">
@@ -88,14 +131,40 @@
                 <span class="bg-indigo-100 text-indigo-700 rounded-full w-6 h-6 inline-flex items-center justify-center text-sm mr-2">1</span>
                 適用制度判定
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">取得日期 (買入)</label>
-                    <input type="date" id="acquireDate" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" onchange="checkSystem()">
+                    <div class="flex space-x-2">
+                        <div class="relative w-1/3">
+                            <input type="number" id="acqYear" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border pr-6 text-sm" placeholder="民國年" oninput="checkSystem()">
+                            <span class="absolute right-2 top-2.5 text-xs text-gray-500">年</span>
+                        </div>
+                        <div class="relative w-1/3">
+                            <input type="number" id="acqMonth" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border pr-6 text-sm" placeholder="月" min="1" max="12" oninput="checkSystem()">
+                            <span class="absolute right-2 top-2.5 text-xs text-gray-500">月</span>
+                        </div>
+                        <div class="relative w-1/3">
+                            <input type="number" id="acqDay" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border pr-6 text-sm" placeholder="日" min="1" max="31" oninput="checkSystem()">
+                            <span class="absolute right-2 top-2.5 text-xs text-gray-500">日</span>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">交易日期 (賣出)</label>
-                    <input type="date" id="sellDate" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" onchange="checkSystem()">
+                    <div class="flex space-x-2">
+                        <div class="relative w-1/3">
+                            <input type="number" id="sellYear" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border pr-6 text-sm" placeholder="民國年" oninput="checkSystem()">
+                            <span class="absolute right-2 top-2.5 text-xs text-gray-500">年</span>
+                        </div>
+                        <div class="relative w-1/3">
+                            <input type="number" id="sellMonth" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border pr-6 text-sm" placeholder="月" min="1" max="12" oninput="checkSystem()">
+                            <span class="absolute right-2 top-2.5 text-xs text-gray-500">月</span>
+                        </div>
+                        <div class="relative w-1/3">
+                            <input type="number" id="sellDay" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border pr-6 text-sm" placeholder="日" min="1" max="31" oninput="checkSystem()">
+                            <span class="absolute right-2 top-2.5 text-xs text-gray-500">日</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -343,6 +412,14 @@
                     <ul id="formulaDetails" class="space-y-1.5 text-sm text-indigo-100 font-mono bg-indigo-950/60 p-4 rounded-lg leading-relaxed">
                         <li>等待輸入資料...</li>
                     </ul>
+
+                    <!-- 匯出 PDF 按鈕 -->
+                    <div class="mt-6 flex justify-end">
+                        <button onclick="exportPDF()" class="bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-2.5 px-5 rounded-lg shadow-lg transition duration-200 flex items-center border border-indigo-400">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                            產生報表並匯出 PDF
+                        </button>
+                    </div>
                 </div>
                 
                 <p class="text-xs text-indigo-400 mt-4 relative z-10 text-center">
@@ -350,6 +427,24 @@
                 </p>
             </div>
         </div>
+    </div>
+
+    <!-- 列印專用報表區塊 (平常在網頁上隱藏，匯出 PDF 時顯示) -->
+    <div id="printArea" style="display: none;">
+        <div class="print-title">114年度個人出售房屋財產交易所得計算表</div>
+        <div id="printDate" style="text-align: right; margin-bottom: 10px; font-size: 14px; color: #555;"></div>
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%">項目</th>
+                    <th style="width: 25%">金額 (新臺幣:元)</th>
+                    <th style="width: 50%">計算說明</th>
+                </tr>
+            </thead>
+            <tbody id="printTableBody">
+                <!-- 由 JavaScript 動態生成對應報表 -->
+            </tbody>
+        </table>
     </div>
 
     <script>
@@ -478,24 +573,49 @@
             calculate();
         }
 
+        // 取得輸入的民國日期並轉換為 Date 物件
+        function getRocDate(yearId, monthId, dayId) {
+            const y = parseInt(document.getElementById(yearId).value);
+            const m = parseInt(document.getElementById(monthId).value);
+            const d = parseInt(document.getElementById(dayId).value);
+            
+            // 防呆檢查：必須都有輸入值且合理
+            if (!y || !m || !d || m < 1 || m > 12 || d < 1 || d > 31) {
+                return null;
+            }
+            // 民國年轉西元年
+            return new Date(y + 1911, m - 1, d);
+        }
+
         // 1. 檢查新舊制防呆
         function checkSystem() {
-            const acqDateStr = document.getElementById('acquireDate').value;
-            const sellDateStr = document.getElementById('sellDate').value;
+            const acqDate = getRocDate('acqYear', 'acqMonth', 'acqDay');
+            const sellDate = getRocDate('sellYear', 'sellMonth', 'sellDay');
             
             const warningEl = document.getElementById('systemWarning');
             const successEl = document.getElementById('systemSuccess');
             const mainForm = document.getElementById('mainForm');
 
-            if (!acqDateStr || !sellDateStr) return;
+            // 如果日期還未填齊全，不進行解鎖也不提示錯誤，先保持表單鎖定
+            if (!acqDate || !sellDate) {
+                warningEl.classList.add('hidden');
+                successEl.classList.add('hidden');
+                mainForm.classList.add('opacity-50', 'pointer-events-none');
+                state.isOldSystem = false;
+                return;
+            }
 
-            const acqDate = new Date(acqDateStr);
-            const sellDate = new Date(sellDateStr);
             const holdYears = (sellDate - acqDate) / (1000 * 60 * 60 * 24 * 365);
 
             let isNewSystem = false;
-            if (acqDate >= new Date('2016-01-01')) isNewSystem = true;
-            else if (acqDate >= new Date('2014-01-02') && holdYears < 2) isNewSystem = true;
+            // 取得日為 105年(2016)1月1日 以後
+            if (acqDate >= new Date(2016, 0, 1)) {
+                isNewSystem = true;
+            } 
+            // 取得日為 103年(2014)1月2日 以後，且持有期間未滿 2 年
+            else if (acqDate >= new Date(2014, 0, 2) && holdYears < 2) {
+                isNewSystem = true;
+            }
 
             if (isNewSystem) {
                 warningEl.classList.remove('hidden');
@@ -695,6 +815,107 @@
             document.getElementById('finalResult').textContent = formatMoney(finalIncome);
             document.getElementById('statusTags').innerHTML = tagsHtml;
             document.getElementById('formulaDetails').innerHTML = formulaLines.map(line => `<li>${line}</li>`).join('');
+        }
+
+        // 6. 產生報表並匯出 PDF (利用瀏覽器原生列印功能)
+        function exportPDF() {
+            // 確保先計算一次最新數值
+            calculate();
+            
+            // 如果連判定都還沒過，阻擋列印
+            if (!state.isOldSystem) {
+                alert("請先將上方日期填寫完整，系統判定為舊制後才能產生報表。");
+                return;
+            }
+
+            const tbody = document.getElementById('printTableBody');
+            let html = '';
+            
+            // 取得各項輸入數值
+            const totalSellPrice = parseFloat(document.getElementById('totalSellPrice').value) || 0;
+            const houseAssessed = parseFloat(document.getElementById('houseAssessed').value) || 0;
+            const landAssessed = parseFloat(document.getElementById('landAssessed').value) || 0;
+            const houseRatio = (houseAssessed > 0) ? (houseAssessed / (houseAssessed + landAssessed)) : 0;
+            const finalIncomeStr = document.getElementById('finalResult').textContent;
+
+            // 取得費用細項字串 (完全參照 PDF 格式展開說明)
+            const expNames = [
+                { id: 'expDeed', name: '契稅' },
+                { id: 'expStamp', name: '印花稅' },
+                { id: 'expScrivener', name: '代書費' },
+                { id: 'expLandValueTax', name: '土地增值稅' },
+                { id: 'expGov', name: '規費' },
+                { id: 'expNotary', name: '公證費' },
+                { id: 'expBroker', name: '仲介費' },
+                { id: 'expOther', name: '其他' }
+            ];
+            let expDetails = [];
+            expNames.forEach(item => {
+                const val = parseFloat(document.getElementById(item.id).value) || 0;
+                // 若為已劃分狀態，不將土地增值稅列入說明中
+                if (val > 0 && !(state.isSplit && item.id === 'expLandValueTax')) {
+                    expDetails.push(`${item.name} ${formatMoney(val)}`);
+                }
+            });
+            const expString = expDetails.length > 0 ? expDetails.join(' + ') : '無';
+            const totalExp = getExpenses();
+
+            // 依據不同申報模式，產生專屬的 PDF 表格內容
+            if (state.method === 'actual') {
+                if (!state.isSplit) {
+                    // 【核實認定 - 未劃分房地】(最符合您上傳的 PDF 範例)
+                    const totalBuyPrice = parseFloat(document.getElementById('actualTotalBuy').value) || 0;
+                    const totalProfit = totalSellPrice - totalBuyPrice - totalExp;
+
+                    html += `<tr><td>一、賣出總價</td><td>${formatMoney(totalSellPrice)}</td><td>房屋及土地合併出售價款</td></tr>`;
+                    html += `<tr><td>二、買入總價</td><td>${formatMoney(totalBuyPrice)}</td><td>房屋及土地合併買入價款</td></tr>`;
+                    html += `<tr><td>三、相關必要費用</td><td>${formatMoney(totalExp)}</td><td>${expString}</td></tr>`;
+                    html += `<tr><td>四、房地交易總損益</td><td>${formatMoney(totalProfit)}</td><td>賣出總價(一) - 買入總價(二) - 必要費用(三)</td></tr>`;
+                    html += `<tr><td>五、房屋現值比例計算</td><td>${(houseRatio * 100).toFixed(4)}%</td><td>房屋評定現值 / (房屋現值 + 土地現值)</td></tr>`;
+                    html += `<tr><td style="padding-left: 20px;">(1) 房屋評定現值</td><td>${formatMoney(houseAssessed)}</td><td></td></tr>`;
+                    html += `<tr><td style="padding-left: 20px;">(2) 土地公告現值</td><td>${formatMoney(landAssessed)}</td><td></td></tr>`;
+                    html += `<tr><td style="padding-left: 20px;">(3) 房地現值總計</td><td>${formatMoney(houseAssessed + landAssessed)}</td><td>${formatMoney(houseAssessed)} + ${formatMoney(landAssessed)}</td></tr>`;
+                    html += `<tr><td style="font-weight: bold;">六、財產交易所得總額</td><td style="font-weight: bold;">${finalIncomeStr}</td><td>房地交易總損益(四) × 房屋現值比例(五)<br>*(若總損益為負值則所得為 0 元)*</td></tr>`;
+                } else {
+                    // 【核實認定 - 已劃分房地】
+                    const actualHouseSell = parseFloat(document.getElementById('actualHouseSell').value) || 0;
+                    const actualHouseBuy = parseFloat(document.getElementById('actualHouseBuy').value) || 0;
+                    
+                    html += `<tr><td>一、房屋賣出總價</td><td>${formatMoney(actualHouseSell)}</td><td>依買賣契約劃分之房屋售價</td></tr>`;
+                    html += `<tr><td>二、房屋買入總價</td><td>${formatMoney(actualHouseBuy)}</td><td>依買賣契約劃分之房屋買價</td></tr>`;
+                    html += `<tr><td>三、相關必要費用</td><td>${formatMoney(totalExp)}</td><td>${expString}<br>*(依規定不可包含土地增值稅)*</td></tr>`;
+                    html += `<tr><td style="font-weight: bold;">四、財產交易所得總額</td><td style="font-weight: bold;">${finalIncomeStr}</td><td>房屋賣出總價(一) - 房屋買入總價(二) - 必要費用(三)</td></tr>`;
+                }
+            } else {
+                // 【標準認定】
+                const cityKey = document.getElementById('citySelect').value;
+                const distKey = document.getElementById('districtSelect').value;
+                const isHighValue = totalSellPrice >= ((taxData[cityKey] && taxData[cityKey].high) ? taxData[cityKey].high * 10000 : Infinity);
+
+                if (isHighValue) {
+                    html += `<tr><td>一、賣出總價</td><td>${formatMoney(totalSellPrice)}</td><td>房屋及土地合併出售價款 (符合${cityKey}高價房屋標準)</td></tr>`;
+                    html += `<tr><td>二、房屋現值比例計算</td><td>${(houseRatio * 100).toFixed(4)}%</td><td>房屋評定現值 / (房屋現值 + 土地現值)</td></tr>`;
+                    html += `<tr><td style="padding-left: 20px;">(1) 房屋評定現值</td><td>${formatMoney(houseAssessed)}</td><td></td></tr>`;
+                    html += `<tr><td style="padding-left: 20px;">(2) 土地公告現值</td><td>${formatMoney(landAssessed)}</td><td></td></tr>`;
+                    html += `<tr><td>三、歸屬房屋收入</td><td>${formatMoney(totalSellPrice * houseRatio)}</td><td>賣出總價(一) × 房屋現值比例(二)</td></tr>`;
+                    html += `<tr><td style="font-weight: bold;">四、財產交易所得總額</td><td style="font-weight: bold;">${finalIncomeStr}</td><td>歸屬房屋收入(三) × 法定利潤率 20%</td></tr>`;
+                } else {
+                    html += `<tr><td>一、房屋評定現值</td><td>${formatMoney(houseAssessed)}</td><td>出售時房屋評定現值</td></tr>`;
+                    const distRate = (taxData[cityKey] && taxData[cityKey].districts[distKey]) ? taxData[cityKey].districts[distKey] : 0;
+                    html += `<tr><td>二、當地核定比率</td><td>${distRate}%</td><td>114年度財政部公告比率 (${cityKey}${distKey})</td></tr>`;
+                    html += `<tr><td style="font-weight: bold;">三、財產交易所得總額</td><td style="font-weight: bold;">${finalIncomeStr}</td><td>房屋評定現值(一) × 當地核定比率(二)</td></tr>`;
+                }
+            }
+
+            tbody.innerHTML = html;
+            
+            // 寫入產出日期 (轉換為民國年)
+            const d = new Date();
+            const rocYear = d.getFullYear() - 1911;
+            document.getElementById('printDate').innerText = `產出日期：民國 ${rocYear} 年 ${String(d.getMonth()+1).padStart(2, '0')} 月 ${String(d.getDate()).padStart(2, '0')} 日`;
+
+            // 觸發瀏覽器列印，使用者可選擇「另存為 PDF」
+            window.print();
         }
 
         // 初始化
